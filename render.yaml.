@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: hernya
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hernya-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: hernya-db
+    plan: free
+    databaseName: hernya
+    user: hernya_user
