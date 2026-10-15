@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#75452c">
+<title>HERNYA — Messenger</title>
+<style>
+:root {
+  --brown: #75452c;
+  --dark: #4c2c1d;
+  --light: #f7f1eb;
+  --white: #fff;
+  --border: #e5d6ca;
+  --muted: #8c796d;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--light);
+  color: var(--dark);
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+header {
+  background: var(--brown);
+  color: white;
+  padding: 17px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { font-size: 25px; font-weight: 800; letter-spacing: 1px; }
+#account { font-size: 12px; text-align: right; }
+main { max-width: 950px; margin: 24px auto; padding: 0 14px; }
+.panel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 12px #4c2c1d0a;
+}
+h2 { margin-top: 0; font-size: 21px; }
+h3 { margin: 0 0 10px; }
+input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 6px 0 12px;
+  background: #fffdfa;
+  color: var(--dark);
+}
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: var(--brown);
+  color: white;
+  font-weight: 700;
+}
+button.secondary { background: #efe3d8; color: var(--dark); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.tabs button { flex: 1; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); font-size: 13px; }
+#error { color: #b3261e; white-space: pre-wrap; margin-top: 12px; }
+#layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; }
+#contacts { display: flex; flex-direction: column; gap: 8px; }
+.contact {
+  background: #faf5f0;
+  color: var(--dark);
+  border: 1px solid var(--border);
+  text-align: left;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.contact.active { background: #e9d4c3; border-color: var(--brown); }
+#chat { min-height: 390px; display: flex; flex-direction: column; }
+#chatHead { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+#messages {
+  flex: 1;
+  min-height: 240px;
+  max-height: 48vh;
+  overflow-y: auto;
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.message {
+  max-width: 85%;
+  padding: 11px 13px;
+  border-radius: 13px;
+  background: #f1e5db;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  align-self: flex-start;
+}
+.message.mine { background: var(--brown); color: white; align-self: flex-end; }
+.message a { color: inherit; }
+.message small { display: block; opacity: .7; font-size: 10px; margin-top: 5px; }
+#sendForm { display: flex; gap: 8px; align-items: center; }
+#sendForm input { margin: 0; min-width: 0; }
+#sendForm button { padding: 13px; }
+#fileInput { display: none; }
+#searchRow { display: flex; gap: 7px; }
+#searchRow input { min-width: 0; }
+#searchRow button { padding: 10px; }
+@media(max-width:650px) {
+  main { margin: 12px auto; }
+  .panel { padding: 15px; }
+  #layout { grid-template-columns: 1fr; }
+  #chat { min-height: 420px; }
+  #messages { max-height: 42vh; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">HERNYA</div>
+  <div id="account">Мессенджер</div>
+</header>
+
+<main>
+  <section id="authPanel" class="panel">
+    <div class="tabs">
+      <button id="registerTab" type="button">Регистрация</button>
+      <button id="loginTab" class="secondary" type="button">Вход</button>
+    </div>
+
+    <form id="registerForm">
+      <h2>Создать аккаунт</h2>
+      <label>Имя<input name="firstName" maxlength="80" required autocomplete="given-name"></label>
+      <label>Фамилия<input name="lastName" maxlength="80" required autocomplete="family-name"></label>
+      <label>Отчество<input name="middleName" maxlength="80" autocomplete="additional-name"></label>
+      <label>Пароль (не менее 8 символов)<input name="password" type="password" minlength="8" maxlength="200" required autocomplete="new-password"></label>
+      <button type="submit">Зарегистрироваться</button>
+    </form>
+
+    <form id="loginForm" class="hidden">
+      <h2>Войти в HERNYA</h2>
+      <label>Код пользователя<input name="publicCode" required autocomplete="username" placeholder="Например, A1B2C3D4E5"></label>
+      <label>Пароль<input name="password" type="password" required autocomplete="current-password"></label>
+      <button type="submit">Войти</button>
+    </form>
+    <div id="error" role="status"></div>
+  </section>
+
+  <section id="appPanel" class="hidden">
+    <div class="panel">
+      <h2>Мой профиль</h2>
+      <div id="profile"></div>
+      <p class="muted">Сохрани свой код: по нему другие пользователи смогут найти тебя.</p>
+      <button id="logout" class="secondary" type="button">Выйти</button>
+    </div>
+
+    <div id="layout">
+      <aside class="panel">
+        <h2>Контакты</h2>
+        <form id="searchForm">
+          <label>Найти по коду пользователя</label>
+          <div id="searchRow">
+            <input name="code" maxlength="20" placeholder="Код пользователя" required>
+            <button type="submit">Найти</button>
+          </div>
+        </form>
+        <div id="searchResult"></div>
+        <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+        <h3>Мои чаты</h3>
+        <div id="contacts"><p class="muted">Найди пользователя по его коду, чтобы начать переписку.</p></div>
+      </aside>
+
+      <section class="panel" id="chat">
+        <div id="chatHead">
+          <h2 id="chatTitle">Личные сообщения</h2>
+          <div id="chatSub" class="muted">Выбери пользователя слева.</div>
+        </div>
+        <div id="messages" aria-live="polite"></div>
+        <form id="sendForm">
+          <input name="body" maxlength="10000" placeholder="Написать сообщение..." autocomplete="off" disabled>
+          <button id="sendButton" type="submit" disabled>➤</button>
+        </form>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button id="attachButton" class="secondary" type="button" disabled>Прикрепить файл</button>
+          <input id="fileInput" type="file">
+          <button id="voiceButton" class="secondary" type="button" disabled>Записать голос</button>
+        </div>
+        <p class="muted">Ограничение загрузки: 100 МБ. Файлы на сервере могут не сохраняться после перезапуска.</p>
+      </section>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (selector) => document.querySelector(selector);
+let token = "";
+let me = null;
+let selectedUser = null;
+let contacts = [];
+let refreshTimer = null;
+let recorder = null;
+let voiceChunks = [];
+
+function showError(message = "") {
+  $("#error").textContent = message;
+}
+async function api(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = "Bearer " + token;
+  if (options.body && !(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  const response = await fetch(url, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Ошибка запроса");
+  return data;
+}
+function setTab(login) {
+  $("#registerForm").classList.toggle("hidden", login);
+  $("#loginForm").classList.toggle("hidden", !login);
+  $("#registerTab").classList.toggle("secondary", login);
+  $("#loginTab").classList.toggle("secondary", !login);
+  showError("");
+}
+$("#registerTab").onclick = () => setTab(false);
+$("#loginTab").onclick = () => setTab(true);
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+function displayName(user) {
+  return [user.first_name, user.last_name, user.middle_name]
+    .filter(Boolean).join(" ");
+}
+function showApp() {
+  $("#authPanel").classList.add("hidden");
+  $("#appPanel").classList.remove("hidden");
+  $("#account").textContent = me ? displayName(me) : "HERNYA";
+  $("#profile").innerHTML =
+    "<strong>" + escapeHtml(displayName(me)) + "</strong><br>" +
+    "Твой код: <strong>" + escapeHtml(me.public_code) + "</strong>";
+}
+function addContact(user) {
+  if (!user || user.id === me.id) return;
+  const existing = contacts.find(item => item.id === user.id);
+  if (!existing) contacts.unshift(user);
+  else Object.assign(existing, user);
+  renderContacts();
+}
+function renderContacts() {
+  const root = $("#contacts");
+  root.replaceChildren();
+  if (!contacts.length) {
+    root.innerHTML = '<p class="muted">Контактов пока нет.</p>';
+    return;
+  }
+  contacts.forEach(user => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "contact" + (selectedUser?.id === user.id ? " active" : "");
+    button.textContent = displayName(user) + " · " + user.public_code;
+    button.onclick = () => openChat(user);
+    root.appendChild(button);
+  });
+}
+async function enterApp(data) {
+  token = data.token;
+  me = data.user;
+  showApp();
+  $("#sendForm input").disabled = false;
+  $("#sendButton").disabled = false;
+  $("#attachButton").disabled = false;
+  $("#voiceButton").disabled = false;
+  contacts = [];
+  selectedUser = null;
+  renderContacts();
+  $("#messages").replaceChildren();
+  $("#chatTitle").textContent = "Личные сообщения";
+  $("#chatSub").textContent = "Найди пользователя по коду.";
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    if (selectedUser) loadMessages().catch(() => {});
+  }, 3500);
+}
+$("#registerForm").onsubmit = async event => {
+  event.preventDefault();
+  showError("");
+  const form = new FormData(event.currentTarget);
+  try {
+    const data = await api("/api/register", {
+      method: "POST",
+      body: JSON.stringify({
+        firstName: form.get("firstName"),
+        lastName: form.get("lastName"),
+        middleName: form.get("middleName"),
+        password: form.get("password")
+      })
+    });
+    await enterApp(data);
+  } catch (error) { showError(error.message); }
+};
+$("#loginForm").onsubmit = async event => {
+  event.preventDefault();
+  showError("");
+  const form = new FormData(event.currentTarget);
+  try {
+    const data = await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify({
+        publicCode: form.get("publicCode"),
+        password: form.get("password")
+      })
+    });
+    await enterApp(data);
+  } catch (error) { showError(error.message); }
+};
+$("#logout").onclick = () => {
+  token = "";
+  me = null;
+  selectedUser = null;
+  contacts = [];
+  if (refreshTimer) clearInterval(refreshTimer);
+  $("#appPanel").classList.add("hidden");
+  $("#authPanel").classList.remove("hidden");
+  $("#registerForm").reset();
+  $("#loginForm").reset();
+  $("#messages").replaceChildren();
+  $("#sendForm input").value = "";
+  $("#sendForm input").disabled = true;
+  $("#sendButton").disabled = true;
+  $("#attachButton").disabled = true;
+  $("#voiceButton").disabled = true;
+  setTab(false);
+};
+
+$("#searchForm").onsubmit = async event => {
+  event.preventDefault();
+  const code = new FormData(event.currentTarget).get("code").trim();
+  const root = $("#searchResult");
+  root.textContent = "Поиск...";
+  try {
+    const data = await api("/api/users/search/" + encodeURIComponent(code));
+    const user = data.user;
+    root.replaceChildren();
+    const info = document.createElement("p");
+    info.textContent = displayName(user) + " · " + user.public_code;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Написать";
+    button.onclick = () => {
+      addContact(user);
+      openChat(user);
+    };
+    root.append(info, button);
+  } catch (error) { root.textContent = error.message; }
+};
+
+async function openChat(user) {
+  selectedUser = user;
+  renderContacts();
+  $("#chatTitle").textContent = displayName(user);
+  $("#chatSub").textContent = "Код: " + user.public_code;
+  await loadMessages();
+  $("#sendForm input").focus();
+}
+async function loadMessages() {
+  if (!selectedUser) return;
+  const data = await api("/api/messages/" + selectedUser.id);
+  const root = $("#messages");
+  root.replaceChildren();
+  data.messages.forEach(message => {
+    const div = document.createElement("div");
+    div.className = "message" + (message.sender_id === me.id ? " mine" : "");
+    if (message.body) {
+      const body = document.createElement("div");
+      body.textContent = message.body;
+      div.appendChild(body);
+    }
+    if (message.file_name) {
+      const link = document.createElement("a");
+      link.href = "/api/files/" + message.id;
+      link.textContent = "📎 " + message.file_name;
+      link.target = "_blank";
+      link.rel = "noopener";
+      div.appendChild(link);
+    }
+    const time = document.createElement("small");
+    time.textContent = new Date(message.created_at).toLocaleString("ru-RU");
+    div.appendChild(time);
+    root.appendChild(div);
+  });
+  root.scrollTop = root.scrollHeight;
+}
+$("#sendForm").onsubmit = async event => {
+  event.preventDefault();
+  if (!selectedUser) return;
+  const input = $("#sendForm input");
+  const body = input.value.trim();
+  if (!body) return;
+  $("#sendButton").disabled = true;
+  try {
+    await api("/api/messages/" + selectedUser.id, {
+      method: "POST",
+      body: JSON.stringify({ body })
+    });
+    input.value = "";
+    await loadMessages();
+  } catch (error) { alert(error.message); }
+  finally { $("#sendButton").disabled = false; }
+};
+$("#attachButton").onclick = () => $("#fileInput").click();
+$("#fileInput").onchange = async event => {
+  if (!selectedUser || !event.target.files.length) return;
+  const file = event.target.files[0];
+  if (file.size > 100 * 1024 * 1024) {
+    alert("Максимальный размер файла — 100 МБ");
+    event.target.value = "";
+    return;
+  }
+  const form = new FormData();
+  form.append("file", file);
+  try {
+    await api("/api/messages/" + selectedUser.id + "/file", {
+      method: "POST",
+      body: form
+    });
+    await loadMessages();
+  } catch (error) { alert(error.message); }
+  finally { event.target.value = ""; }
+};
+$("#voiceButton").onclick = async () => {
+  if (recorder && recorder.state === "recording") {
+    recorder.stop();
+    $("#voiceButton").textContent = "Записать голос";
+    return;
+  }
+  if (!selectedUser) return;
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    alert("Запись голоса не поддерживается этим браузером.");
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceChunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = event => {
+      if (event.data.size) voiceChunks.push(event.data);
+    };
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(track => track.stop());
+      const blob = new Blob(voiceChunks, {
+        type: recorder.mimeType || "audio/webm"
+      });
+      if (blob.size > 100 * 1024 * 1024) {
+        alert("Запись превышает 100 МБ");
+        return;
+      }
+      const form = new FormData();
+      form.append("file", blob, "voice-message.webm");
+      try {
+        await api("/api/messages/" + selectedUser.id + "/file", {
+          method: "POST",
+          body: form
+        });
+        await loadMessages();
+      } catch (error) { alert(error.message); }
+    };
+    recorder.start();
+    $("#voiceButton").textContent = "Остановить запись";
+  } catch {
+    alert("Разреши доступ к микрофону в браузере.");
+  }
+};
+</script>
+</body>
+</html>
